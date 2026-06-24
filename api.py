@@ -4,6 +4,12 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 import sqlite3
+import os
+
+os.makedirs(
+    "data",
+    exist_ok=True
+)
 
 app = FastAPI(
     title="Goon Tracker API",
