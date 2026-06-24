@@ -1,6 +1,20 @@
 import sqlite3
+import os
 
-DB_FILE = "data/sightings.db"
+os.makedirs(
+    "data",
+    exist_ok=True
+)
+
+DATA_DIR = os.getenv(
+    "DATA_DIR",
+    "data"
+)
+
+DB_FILE = os.path.join(
+    DATA_DIR,
+    "sightings.db"
+)
 
 
 def initialize():

@@ -1,15 +1,37 @@
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-import sqlite3
 import os
+import sqlite3
+
+from database import initialize
+
+# ---------------------------------------------------
+# Ensure the data directory and database exist
+# ---------------------------------------------------
 
 os.makedirs(
     "data",
     exist_ok=True
 )
+
+initialize()
+
+DATA_DIR = os.getenv(
+    "DATA_DIR",
+    "data"
+)
+
+DB_FILE = os.path.join(
+    DATA_DIR,
+    "sightings.db"
+)
+
+# ---------------------------------------------------
+# FastAPI
+# ---------------------------------------------------
 
 app = FastAPI(
     title="Goon Tracker API",
@@ -30,8 +52,38 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-DB_FILE = "data/sightings.db"
+# ---------------------------------------------------
+# Dashboard
+# ---------------------------------------------------
 
+
+@app.get("/")
+def dashboard():
+
+    return FileResponse(
+        "web/index.html"
+    )
+
+
+@app.get("/app.js")
+def app_js():
+
+    return FileResponse(
+        "web/app.js"
+    )
+
+
+@app.get("/styles.css")
+def styles():
+
+    return FileResponse(
+        "web/styles.css"
+    )
+
+
+# ---------------------------------------------------
+# Current Status
+# ---------------------------------------------------
 
 @app.get("/current_status")
 def current_status():
@@ -80,7 +132,7 @@ def current_status():
 
     status = (
         "AGREEMENT"
-        if len(unique_maps) == 1
+        if len(unique_maps) == 1 and reports
         else "DISAGREEMENT"
     )
 
@@ -89,6 +141,10 @@ def current_status():
         "reports": reports
     }
 
+
+# ---------------------------------------------------
+# History
+# ---------------------------------------------------
 
 @app.get("/history")
 def history():
@@ -125,6 +181,10 @@ def history():
     ]
 
 
+# ---------------------------------------------------
+# Statistics
+# ---------------------------------------------------
+
 @app.get("/stats")
 def stats():
 
@@ -152,27 +212,3 @@ def stats():
         }
         for row in rows
     ]
-
-
-@app.get("/")
-def dashboard():
-
-    return FileResponse(
-        "web/index.html"
-    )
-
-
-@app.get("/app.js")
-def app_js():
-
-    return FileResponse(
-        "web/app.js"
-    )
-
-
-@app.get("/styles.css")
-def styles():
-
-    return FileResponse(
-        "web/styles.css"
-    )
