@@ -1,11 +1,19 @@
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 import sqlite3
 
 app = FastAPI(
     title="Goon Tracker API",
     version="2.0.0"
+)
+
+app.mount(
+    "/static",
+    StaticFiles(directory="web"),
+    name="static"
 )
 
 app.add_middleware(
@@ -17,15 +25,6 @@ app.add_middleware(
 )
 
 DB_FILE = "data/sightings.db"
-
-
-@app.get("/")
-def root():
-
-    return {
-        "status": "online",
-        "service": "Goon Tracker API"
-    }
 
 
 @app.get("/current_status")
@@ -147,3 +146,27 @@ def stats():
         }
         for row in rows
     ]
+
+
+@app.get("/")
+def dashboard():
+
+    return FileResponse(
+        "web/index.html"
+    )
+
+
+@app.get("/app.js")
+def app_js():
+
+    return FileResponse(
+        "web/app.js"
+    )
+
+
+@app.get("/styles.css")
+def styles():
+
+    return FileResponse(
+        "web/styles.css"
+    )
