@@ -1,4 +1,5 @@
 import re
+from datetime import datetime
 
 from playwright.sync_api import sync_playwright
 
@@ -26,7 +27,9 @@ class TarkovBotCollector(BaseCollector):
                     wait_until="networkidle"
                 )
 
-                text = page.locator("body").inner_text()
+                text = page.locator(
+                    "body"
+                ).inner_text()
 
             finally:
 
@@ -38,12 +41,30 @@ class TarkovBotCollector(BaseCollector):
             re.MULTILINE
         )
 
-        if match:
+        if not match:
+            raise Exception(
+                "Unable to determine current map"
+            )
 
-            map_name = match.group(1)
+        map_name = match.group(1)
+        game_mode = match.group(2)
 
-            return map_name.upper()
-
-        raise Exception(
-            "Unable to determine current map"
+        timestamp_match = re.search(
+            r"(\d{2}\.\d{2}\.\d{4}\s+\d{2}:\d{2}:\d{2})",
+            text
         )
+
+        report_time = None
+
+        if timestamp_match:
+
+            report_time = datetime.strptime(
+                timestamp_match.group(1),
+                "%d.%m.%Y %H:%M:%S"
+            )
+
+        return {
+            "map": map_name.upper(),
+            "game_mode": game_mode,
+            "report_time": report_time
+        }

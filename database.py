@@ -22,7 +22,12 @@ def initialize():
     conn.close()
 
 
-def save_sighting(source, map_name):
+def save_sighting(
+    source,
+    map_name,
+    game_mode=None,
+    report_time=None
+):
 
     conn = sqlite3.connect(DB_FILE)
 
@@ -30,18 +35,25 @@ def save_sighting(source, map_name):
         """
         INSERT INTO sightings (
             source,
-            map
+            map,
+            game_mode,
+            report_time
         )
-        VALUES (?, ?)
+        VALUES (?, ?, ?, ?)
         """,
-        (source, map_name)
+        (
+            source,
+            map_name,
+            game_mode,
+            report_time
+        )
     )
 
     conn.commit()
     conn.close()
 
 
-def get_latest_map(source):
+def get_latest_sighting(source):
 
     conn = sqlite3.connect(DB_FILE)
 
@@ -49,7 +61,10 @@ def get_latest_map(source):
 
     cursor.execute(
         """
-        SELECT map
+        SELECT
+            map,
+            game_mode,
+            report_time
         FROM sightings
         WHERE source = ?
         ORDER BY id DESC
@@ -62,7 +77,11 @@ def get_latest_map(source):
 
     conn.close()
 
-    if row:
-        return row[0]
+    if not row:
+        return None
 
-    return None
+    return {
+        "map": row[0],
+        "game_mode": row[1],
+        "report_time": row[2]
+    }

@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from collectors.base_web_collector import BaseWebCollector
 
 
@@ -13,17 +15,21 @@ class GoonTrackerCollector(BaseWebCollector):
             "The Goons were last seen on:"
         )[1][:300]
 
-        maps = [
-            "Lighthouse",
-            "Customs",
-            "Woods",
-            "Shoreline"
+        lines = [
+            line.strip()
+            for line in section.splitlines()
+            if line.strip()
         ]
 
-        for map_name in maps:
-            if map_name in section:
-                return map_name.upper()
+        if not lines:
+            raise Exception(
+                "Unable to determine current map"
+            )
 
-        raise Exception(
-            "Unable to determine current map"
-        )
+        current_map = lines[0]
+
+        return {
+            "map": current_map.upper(),
+            "game_mode": None,
+            "report_time": None
+        }

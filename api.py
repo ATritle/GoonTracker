@@ -1,11 +1,19 @@
-import sqlite3
-from collections import Counter
-
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI
+
+import sqlite3
 
 app = FastAPI(
     title="Goon Tracker API",
-    version="1.0.0"
+    version="2.0.0"
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 DB_FILE = "data/sightings.db"
@@ -20,8 +28,8 @@ def root():
     }
 
 
-@app.get("/current")
-def current():
+@app.get("/current_status")
+def current_status():
 
     conn = sqlite3.connect(DB_FILE)
 
@@ -31,37 +39,8 @@ def current():
         SELECT
             source,
             map,
-            collected_at
-        FROM sightings
-        ORDER BY id DESC
-        LIMIT 20
-    """)
-
-    rows = cursor.fetchall()
-
-    conn.close()
-
-    return [
-        {
-            "source": row[0],
-            "map": row[1],
-            "collected_at": row[2]
-        }
-        for row in rows
-    ]
-
-
-@app.get("/consensus")
-def consensus():
-
-    conn = sqlite3.connect(DB_FILE)
-
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        SELECT
-            source,
-            map,
+            game_mode,
+            report_time,
             collected_at
         FROM sightings
         WHERE id IN (
@@ -75,38 +54,70 @@ def consensus():
 
     conn.close()
 
-    if not rows:
+    reports = []
 
-        return {
-            "map": None,
-            "confidence": 0,
-            "sources": 0
-        }
+    for row in rows:
 
-    maps = [row[1] for row in rows]
-
-    counts = Counter(maps)
-
-    current_map = counts.most_common(1)[0][0]
-
-    confidence = (
-        counts[current_map]
-        / len(maps)
-    ) * 100
-
-    return {
-        "map": current_map,
-        "confidence": round(confidence, 2),
-        "sources": len(rows),
-        "tracker_results": [
+        reports.append(
             {
                 "source": row[0],
                 "map": row[1],
-                "collected_at": row[2]
+                "game_mode": row[2],
+                "report_time": row[3],
+                "collected_at": row[4]
             }
-            for row in rows
-        ]
+        )
+
+    unique_maps = {
+        report["map"]
+        for report in reports
     }
+
+    status = (
+        "AGREEMENT"
+        if len(unique_maps) == 1
+        else "DISAGREEMENT"
+    )
+
+    return {
+        "status": status,
+        "reports": reports
+    }
+
+
+@app.get("/history")
+def history():
+
+    conn = sqlite3.connect(DB_FILE)
+
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT
+            source,
+            map,
+            game_mode,
+            report_time,
+            collected_at
+        FROM sightings
+        ORDER BY id DESC
+        LIMIT 100
+    """)
+
+    rows = cursor.fetchall()
+
+    conn.close()
+
+    return [
+        {
+            "source": row[0],
+            "map": row[1],
+            "game_mode": row[2],
+            "report_time": row[3],
+            "collected_at": row[4]
+        }
+        for row in rows
+    ]
 
 
 @app.get("/stats")
